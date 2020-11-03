@@ -25,13 +25,55 @@ function user_vote()
         exit("nonce error");
     }
 
-    // fetch vote_count for a post, set it to 0 if it's empty, increment by 1 when a click is registered
+    // fetch vote_count for a post, set it to 0 if it's empty, increment it when a click is registered
     $vote_count = get_post_meta($_REQUEST["post_id"], "votes", true);
     $vote_count = ($vote_count == '') ? 0 : $vote_count;
-    $new_vote_count = $vote_count + 1;
+    $new_vote_count = $vote_count + $_REQUEST["vote_direction"];
 
-    // Update the value of 'likes' meta key for the specified post, creates new meta data for the post if none exists
+    $voted_posts = get_voted_posts();
+
+    //voted post structure
+    //$voted_posts = array("1" => 0, "5" => 1, "7" => -1);
+
+    //condition user has not voted
+        //Add post_id and vote direction to user meta
+
+    //user has upvoted presses upvote
+        //Remove upvote from rating
+        //Add post_id and vote direction to 0 in user meta
+
+    //user has downvoted presses downvote
+        //Remove downvote from rating
+        //Add post_id and vote direction to 0 in user meta
+
+    //user has upvoted presses downvote
+        //Remove upvote from rating
+        //Add post_id and vote direction to -1 in user meta
+
+    //user has downvoted presses upvote
+        //Remove downvote from rating
+        //Add post_id and vote direction to 1 in user meta
+
+    /*
+    $vote = false;
+    //the user does not have the post_id in their user meta
+    if (in_array($_REQUEST["post_id"], $voted_posts) === false) {
+        // Update the value of 'votes' meta key for the specified post, creates new meta data for the post if none exists
+        $vote = update_post_meta($_REQUEST["post_id"], "votes", $new_vote_count);
+
+        // now add the post_id to the use meta so they can't vote again
+        if(count($voted_posts) === 0){
+            $voted_posts = array($_REQUEST["post_id"]);
+        }
+        else{
+            array_push($voted_posts, $_REQUEST["post_id"]);
+        }
+        update_user_meta($current_user_id, "voted_posts", []);
+    }
+    */
+
     $vote = update_post_meta($_REQUEST["post_id"], "votes", $new_vote_count);
+
 
     // If above action fails, result type is set to 'error' and vote_count set to old value, if success, updated to new_vote_count
     if ($vote === false) {
@@ -50,14 +92,50 @@ function user_vote()
         header("Location: " . $_SERVER["HTTP_REFERER"]);
     }
 
-    // don't forget to end your scripts with a die() function - very important
     die();
+}
+
+function set_user_vote_direction($post_id, $vote_direction){
+    $voted_posts = get_voted_posts();
+    $voted_posts[$post_id] = $vote_direction;
+    update_user_meta(get_current_user_id(), "voted_posts", $voted_posts);
+}
+
+function get_vote_direction($post_id){
+    if (has_user_voted($post_id)){
+        $voted_posts = get_voted_posts();
+        return $voted_posts[$post_id];
+    }
+
+}
+
+function has_user_voted($post_id){
+    $voted_posts = get_voted_posts();
+    if (array_key_exists($post_id, $voted_posts)){
+        return true;
+    }
+    else{
+        return false;
+    }
+}
+
+function get_voted_posts(){
+    $current_user_id = get_current_user_id();
+    $voted_posts = get_user_meta($current_user_id, "voted_posts", true);
+    $voted_posts = ($voted_posts == '') ? [] : $voted_posts;
+    return $voted_posts;
+}
+
+function set_voted_posts_user_meta(){
+
 }
 
 // define the function to be fired for logged out users
 function please_login()
 {
-    //echo "<script>alert('Log in')</script>";
+    $result['type'] = "error";
+    $result = json_encode($result);
+    echo $result;
     die();
 }
 
@@ -76,3 +154,4 @@ function script_enqueuer() {
     wp_enqueue_script( 'jquery' );
     wp_enqueue_script( 'vote_display' );
 }
+
