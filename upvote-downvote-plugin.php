@@ -152,3 +152,11 @@ function script_enqueuer() {
     wp_enqueue_script( 'vote_display' );
 }
 
+function add_admin_page(){
+    add_menu_page("Upvote Downvote Information", "Votes", "manage_options", "upvote-downvote", "vote_display_admin_panel");
+}
+add_action("admin_menu", "add_admin_page");
+
+function vote_display_admin_panel(){
+    include( WP_PLUGIN_DIR .'/upvote-downvote-plugin/vote-admin-panel.php' );
+}
