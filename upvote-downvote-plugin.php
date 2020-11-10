@@ -25,60 +25,60 @@ function user_vote()
         exit("nonce error");
     }
 
-    // fetch vote_count for a post, set it to 0 if it's empty, increment it when a click is registered
-    $vote_count = get_post_meta($_REQUEST["post_id"], "votes", true);
-    $vote_count = ($vote_count == '') ? 0 : $vote_count;
-    $new_vote_count = $vote_count + $_REQUEST["vote_direction"];
+    $post_id = $_REQUEST["post_id"];
+    $vote_direction = $_REQUEST["vote_direction"];
 
-    $voted_posts = get_voted_posts();
+    // fetch vote_count for a post, set it to 0 if it's empty, increment it when a click is registered
+    $old_vote_count = get_post_meta($post_id, "votes", true);
+    $old_vote_count = ($old_vote_count == '') ? 0 : $old_vote_count;
+    $new_vote_count = $old_vote_count;
 
     //voted post structure
     //$voted_posts = array("1" => 0, "5" => 1, "7" => -1);
 
-    //condition user has not voted
-        //Add post_id and vote direction to user meta
-
-    //user has upvoted presses upvote
-        //Remove upvote from rating
-        //Add post_id and vote direction to 0 in user meta
-
-    //user has downvoted presses downvote
-        //Remove downvote from rating
-        //Add post_id and vote direction to 0 in user meta
-
-    //user has upvoted presses downvote
-        //Remove upvote from rating
-        //Add post_id and vote direction to -1 in user meta
-
-    //user has downvoted presses upvote
-        //Remove downvote from rating
-        //Add post_id and vote direction to 1 in user meta
-
-    /*
-    $vote = false;
-    //the user does not have the post_id in their user meta
-    if (in_array($_REQUEST["post_id"], $voted_posts) === false) {
-        // Update the value of 'votes' meta key for the specified post, creates new meta data for the post if none exists
-        $vote = update_post_meta($_REQUEST["post_id"], "votes", $new_vote_count);
-
-        // now add the post_id to the use meta so they can't vote again
-        if(count($voted_posts) === 0){
-            $voted_posts = array($_REQUEST["post_id"]);
+    if ($vote_direction >= 1){
+        if (has_user_voted($post_id) === true){
+            $previous_vote_direction = get_vote_direction_meta($post_id);
+            if ($previous_vote_direction >= 1){
+                $new_vote_count = $old_vote_count -1;
+                set_user_vote_direction($post_id, 0);
+            }elseif ($previous_vote_direction == 0){
+                $new_vote_count = $old_vote_count + 1;
+                set_user_vote_direction($post_id, 1);
+            }elseif ($previous_vote_direction <= -1){
+                $new_vote_count = $old_vote_count + 2;
+                set_user_vote_direction($post_id, 1);
+            }
+        }else{
+            $new_vote_count += $vote_direction;
+            set_user_vote_direction($post_id, $vote_direction);
         }
-        else{
-            array_push($voted_posts, $_REQUEST["post_id"]);
+    }elseif ($vote_direction <= -1){
+        if (has_user_voted($post_id) === true){
+            $previous_vote_direction = get_vote_direction_meta($post_id);
+            if ($previous_vote_direction >= 1){
+                $new_vote_count = $old_vote_count - 2;
+                set_user_vote_direction($post_id, -1);
+            }elseif ($previous_vote_direction == 0){
+                $new_vote_count = $old_vote_count - 1;
+                set_user_vote_direction($post_id, -1);
+            }elseif ($previous_vote_direction <= -1){
+                $new_vote_count = $old_vote_count + 1;
+                set_user_vote_direction($post_id, 0);
+            }
+        }else{
+            $new_vote_count += $vote_direction;
+            set_user_vote_direction($post_id, $vote_direction);
         }
-        update_user_meta($current_user_id, "voted_posts", []);
     }
-    */
 
-    $vote = update_post_meta($_REQUEST["post_id"], "votes", $new_vote_count);
+    $vote = update_post_meta($post_id, "votes", $new_vote_count);
 
 
     // If above action fails, result type is set to 'error' and vote_count set to old value, if success, updated to new_vote_count
     if ($vote === false) {
         $result['type'] = "error";
-        $result['vote_count'] = $vote_count;
+        $result['vote_count'] = $old_vote_count;
     } else {
         $result['type'] = "success";
         $result['vote_count'] = $new_vote_count;
@@ -96,21 +96,21 @@ function user_vote()
 }
 
 function set_user_vote_direction($post_id, $vote_direction){
-    $voted_posts = get_voted_posts();
+    $voted_posts = get_voted_posts_meta();
     $voted_posts[$post_id] = $vote_direction;
     update_user_meta(get_current_user_id(), "voted_posts", $voted_posts);
 }
 
-function get_vote_direction($post_id){
+function get_vote_direction_meta($post_id){
     if (has_user_voted($post_id)){
-        $voted_posts = get_voted_posts();
+        $voted_posts = get_voted_posts_meta();
         return $voted_posts[$post_id];
     }
-
+    return 0;
 }
 
 function has_user_voted($post_id){
-    $voted_posts = get_voted_posts();
+    $voted_posts = get_voted_posts_meta();
     if (array_key_exists($post_id, $voted_posts)){
         return true;
     }
@@ -119,16 +119,13 @@ function has_user_voted($post_id){
     }
 }
 
-function get_voted_posts(){
+function get_voted_posts_meta(){
     $current_user_id = get_current_user_id();
     $voted_posts = get_user_meta($current_user_id, "voted_posts", true);
     $voted_posts = ($voted_posts == '') ? [] : $voted_posts;
     return $voted_posts;
 }
 
-function set_voted_posts_user_meta(){
-
-}
 
 // define the function to be fired for logged out users
 function please_login()
