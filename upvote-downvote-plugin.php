@@ -1,7 +1,7 @@
 <?php
 /*
     Plugin Name: Upvote Downvote Plugin
-    Plugin URI: https://www.delitt.com/
+    Plugin URI: https://github.com/shadopawn/upvote-downvote-plugin
     description: >-
     a plugin to allow for upvotes and downvotes on posts
     Version: 1.2
