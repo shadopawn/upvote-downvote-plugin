@@ -36,41 +36,28 @@ function user_vote()
     //voted post structure
     //$voted_posts = array("1" => 0, "5" => 1, "7" => -1);
 
-    if ($vote_direction >= 1){
-        if (has_user_voted($post_id) === true){
-            $previous_vote_direction = get_vote_direction_meta($post_id);
-            if ($previous_vote_direction >= 1){
-                $new_vote_count = $old_vote_count -1;
-                set_user_vote_direction($post_id, 0);
-            }elseif ($previous_vote_direction == 0){
-                $new_vote_count = $old_vote_count + 1;
-                set_user_vote_direction($post_id, 1);
-            }elseif ($previous_vote_direction <= -1){
-                $new_vote_count = $old_vote_count + 2;
-                set_user_vote_direction($post_id, 1);
-            }
-        }else{
-            $new_vote_count += $vote_direction;
-            set_user_vote_direction($post_id, $vote_direction);
-        }
-    }elseif ($vote_direction <= -1){
-        if (has_user_voted($post_id) === true){
-            $previous_vote_direction = get_vote_direction_meta($post_id);
-            if ($previous_vote_direction >= 1){
-                $new_vote_count = $old_vote_count - 2;
-                set_user_vote_direction($post_id, -1);
-            }elseif ($previous_vote_direction == 0){
-                $new_vote_count = $old_vote_count - 1;
-                set_user_vote_direction($post_id, -1);
-            }elseif ($previous_vote_direction <= -1){
-                $new_vote_count = $old_vote_count + 1;
-                set_user_vote_direction($post_id, 0);
-            }
-        }else{
-            $new_vote_count += $vote_direction;
-            set_user_vote_direction($post_id, $vote_direction);
-        }
+    $previous_vote_direction = get_vote_direction_meta($post_id);
+    //if previous vote in middle regular vote apply: $previous_vote_direction == 0
+
+    //if vote remove: $vote_direction == $previous_vote_direction
+        // add negative vote direction to old vote count
+        // set vote direction to middle
+
+    //if vote swap: $vote_direction != $previous_vote_direction
+        // add 2 times vote directions to old vote count
+        // set vote meta to vote direction
+
+    if($previous_vote_direction == 0){
+        $new_vote_count += $vote_direction;
+        set_user_vote_direction($post_id, $vote_direction);
+    }elseif ($vote_direction == $previous_vote_direction){
+        $new_vote_count = $old_vote_count - $vote_direction;
+        set_user_vote_direction($post_id, 0);
+    }elseif ($vote_direction != $previous_vote_direction){
+        $new_vote_count = $old_vote_count + 2*$vote_direction;
+        set_user_vote_direction($post_id, $vote_direction);
     }
+
 
     $vote = update_post_meta($post_id, "votes", $new_vote_count);
 
